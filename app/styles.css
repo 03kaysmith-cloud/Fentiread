@@ -1,0 +1,95 @@
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; padding: 0; }
+
+body {
+  font-family: "Source Serif 4", Georgia, serif;
+  background: #fff;
+  color: #000;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+button { font-family: inherit; }
+
+::selection { background: #000; color: #fff; }
+
+/* Book card hover reveal delete button */
+.book-card:hover .book-del { opacity: 1 !important; }
+
+/* Toast animation */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes indeterminate {
+  0% { transform: translateX(-60px); }
+  50% { transform: translateX(108px); }
+  100% { transform: translateX(-60px); }
+}
+
+/* Toggle switch */
+.fr-toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  border: 1px solid currentColor;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 150ms;
+}
+.fr-toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: currentColor;
+  transition: transform 150ms;
+}
+.fr-toggle.on {
+  background: currentColor;
+}
+.fr-toggle.on::after {
+  transform: translateX(20px);
+  background: var(--fr-bg, #fff);
+}
+
+/* Toggle group */
+.fr-toggle-group {
+  display: inline-flex;
+  border: 0.75px solid currentColor;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.fr-toggle-group button {
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.fr-toggle-group button.active {
+  background: currentColor;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+
+/* Multi-word spaces */
+.mw-space {
+  display: inline-block;
+  width: 0.35em;
+}

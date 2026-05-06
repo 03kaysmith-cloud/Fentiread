@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FentiRead</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="boot-status" style="font-family: Georgia, serif; padding: 32px; color: #111;">Loading FentiRead...</div>
+<div id="root"></div>
+
+<script>
+  window.addEventListener('error', function (event) {
+    var el = document.getElementById('boot-status');
+    if (!el) return;
+    el.style.color = '#b00020';
+    el.style.whiteSpace = 'pre-wrap';
+    el.textContent = 'FentiRead failed to start:\n' + (event.message || 'Unknown error') +
+      (event.filename ? '\n' + event.filename + ':' + event.lineno + ':' + event.colno : '');
+  });
+  window.addEventListener('unhandledrejection', function (event) {
+    var el = document.getElementById('boot-status');
+    if (!el) return;
+    var reason = event.reason && (event.reason.stack || event.reason.message || String(event.reason));
+    el.style.color = '#b00020';
+    el.style.whiteSpace = 'pre-wrap';
+    el.textContent = 'FentiRead failed to start:\n' + (reason || 'Unhandled promise rejection');
+  });
+</script>
+
+<script src="vendor/react.production.min.js"></script>
+<script src="vendor/react-dom.production.min.js"></script>
+<script src="vendor/jszip.min.js"></script>
+
+<script src="store.js"></script>
+<script src="mobi-parser.js"></script>
+<script src="app.compiled.js"></script>
+
+</body>
+</html>

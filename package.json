@@ -1,0 +1,49 @@
+{
+  "name": "fentiread-desktop",
+  "version": "0.1.2",
+  "description": "Desktop wrapper for FentiRead",
+  "main": "desktop/main.js",
+  "private": true,
+  "scripts": {
+    "build:app": "node app/build-app.js",
+    "start": "npm run build:app && electron .",
+    "dist": "npm run dist:portable",
+    "dist:portable": "npm run build:app && electron-builder --win portable",
+    "dist:unpacked": "npm run build:app && electron-builder --dir",
+    "dist:installer": "npm run build:app && electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "local.fentiread.desktop",
+    "productName": "FentiRead",
+    "compression": "store",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "app/**/*",
+      "assets/**/*",
+      "desktop/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "assets/icon.ico",
+      "signAndEditExecutable": false,
+      "target": [
+        "portable"
+      ]
+    },
+    "portable": {
+      "artifactName": "FentiRead ${version}.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
+  "devDependencies": {
+    "electron": "^41.5.0",
+    "electron-builder": "^26.0.0"
+  }
+}
