@@ -79,8 +79,12 @@ For each selected action:
 - Report how many fixes were applied.
 
 ### chapters
-- Run `python tools/fix_book.py --chapters <path>` to detect chapter boundaries and write `fentiread-chapters.json` into the EPUB.
-- Report how many chapters were detected.
+- Run `python tools/fix_book.py --chapters <path>` to detect chapter boundaries. If it fails or finds 0, build the chapter map manually by inspecting heading tags and anchor IDs in the HTML.
+- The chapter map JSON must be placed at `{opfDir}/fentiread-chapters.json` inside the EPUB (e.g. `OEBPS/fentiread-chapters.json`). Check `META-INF/container.xml` for the OPF path to determine the correct directory.
+- Use the **object format**: `{ "chapters": [...], "startChapter": N }` where each chapter entry has `{ "file", "charOffset", "title", "number" }`.
+- **Do NOT include front matter** (title pages, copyright, publisher metadata, table of contents, Project Gutenberg headers, etc.) as chapters. Start the chapter map at the first real content: Chapter 1, Prologue, Introduction, or the opening of the novel. If a book has a meaningful prologue or author's introduction that is part of the narrative, include it as the first chapter.
+- **Set `startChapter`** to `0` (the first chapter in the map is where reading begins).
+- Report how many chapters were detected and which one is the start chapter.
 
 ### images
 - Open the EPUB ZIP, find images over 1200px wide, resize them using Python PIL/Pillow, and write back.

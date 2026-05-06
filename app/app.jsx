@@ -534,22 +534,29 @@ function calculateDelay(token, wpm, settings) {
 }
 
 // -- Delete modal (replaces confirm()) --
-function DeleteModal({ book, theme, onConfirm, onCancel }) {
+function DeleteModal({ book, theme, onArchive, onDelete, onCancel }) {
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onCancel(); else if (e.key === 'Enter') onConfirm(); };
+    const onKey = (e) => { if (e.key === 'Escape') onCancel(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onConfirm, onCancel]);
+  }, [onCancel]);
+  const hasElectron = !!window.electronBooks;
   return (
     <div onClick={onCancel} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-      <div onClick={e => e.stopPropagation()} style={{ width: 420, maxWidth: '90vw', background: theme.bg, border: `0.75px solid ${theme.ink}`, padding: 28, color: theme.ink }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: 440, maxWidth: '90vw', background: theme.bg, border: `0.75px solid ${theme.ink}`, padding: 28, color: theme.ink }}>
         <div style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: 22, fontWeight: 600, marginBottom: 12 }}>Remove book?</div>
-        <div style={{ fontSize: 15, lineHeight: 1.5, opacity: 0.7, marginBottom: 28 }}>
-          "{book.title}" will be removed from your library. This can't be undone.
+        <div style={{ fontSize: 15, lineHeight: 1.5, opacity: 0.7, marginBottom: hasElectron ? 16 : 28 }}>
+          "{book.title}" will be removed from your library.
         </div>
+        {hasElectron && (
+          <div style={{ fontSize: 13, lineHeight: 1.5, opacity: 0.5, marginBottom: 28 }}>
+            Archive moves the file to books/archive. Delete removes it permanently.
+          </div>
+        )}
         <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
           <button onClick={onCancel} style={secondaryBtn(theme)}>Cancel</button>
-          <button onClick={onConfirm} style={primaryBtn(theme)}>Remove</button>
+          {hasElectron && <button onClick={onArchive} style={secondaryBtn(theme)}>Archive</button>}
+          <button onClick={onDelete} style={{ ...primaryBtn(theme), background: '#c33', color: '#fff', borderColor: '#c33' }}>Delete</button>
         </div>
       </div>
     </div>
@@ -707,10 +714,14 @@ function Reader({ theme, book, onClose, settings, onSettings, onProgressChange, 
   // Compute initial token index synchronously from saved word position
   const initialIdx = useMemo(() => {
     const savedWordIdx = book.progress?.wordIndex || 0;
+    // If no saved progress but book has a startChapter, jump to that chapter
+    if (savedWordIdx <= 0 && book.startChapter > 0 && chapterStarts.length > book.startChapter) {
+      return chapterStarts[book.startChapter];
+    }
     if (savedWordIdx <= 0 || wordTokenIndices.length === 0) return 0;
     const clamped = Math.max(0, Math.min(wordTokenIndices.length - 1, savedWordIdx));
     return wordTokenIndices[clamped];
-  }, [book.id, wordTokenIndices]);
+  }, [book.id, wordTokenIndices, chapterStarts]);
 
   const [idx, setIdx] = useState(initialIdx);
 
@@ -1814,7 +1825,7 @@ function PageView({ theme, bookId, words, chapterStarts, chapters, currentIdx, o
           />
         </div>
         <div style={{ textAlign: 'center' }}>
-          <Mono size={10} opacity={0.5}>tap a word to read from there - hold to bookmark - arrows to flip</Mono>
+          <Mono size={10} opacity={0.5}>tap a word to read from there</Mono>
         </div>
       </div>
 
@@ -2773,6 +2784,7 @@ function App() {
 
   useEffect(() => { (async () => {
     try {
+      // Show cached books immediately
       const list = await FRStore.dbAll('books');
       list.sort((a, b) => (b.lastReadAt || b.addedAt || 0) - (a.lastReadAt || a.addedAt || 0));
       setBooks(list);
@@ -2781,14 +2793,18 @@ function App() {
         setSettings(prev => ({ ...prev, ...s.value }));
         if (s.value.dark != null) setDark(!!s.value.dark);
       }
-      // Auto-scan saved library folder for new books
-      const result = await FRStore.autoScanLibrary();
-      if (result && result.added > 0) {
-        const updated = await FRStore.dbAll('books');
-        updated.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
-        setBooks(updated);
-      }
     } catch (e) { console.error(e); }
+    // Scan for new books in background (after UI is visible)
+    setTimeout(async () => {
+      try {
+        const result = await FRStore.autoScanLibrary();
+        if (result && result.added > 0) {
+          const updated = await FRStore.dbAll('books');
+          updated.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+          setBooks(updated);
+        }
+      } catch (_) {}
+    }, 50);
   })(); }, []);
 
   // Pre-tokenize books in background so opening is instant
@@ -2960,12 +2976,40 @@ function App() {
     }
   }, [refresh]);
 
-  const onDeleteConfirm = useCallback(async () => {
+  const findBookFile = useCallback((book) => {
+    if (!window.electronBooks) return null;
+    if (book.fileName) return book.fileName;
+    // Match by title/author in the books directory
+    const epubs = window.electronBooks.listEpubs();
+    const needle = (book.title || '').toLowerCase();
+    const match = epubs.find(ep => ep.name.toLowerCase().includes(needle));
+    return match ? match.name : null;
+  }, []);
+
+  const onDeleteBook = useCallback(async () => {
     if (!deleteTarget) return;
+    const fileName = findBookFile(deleteTarget);
+    if (fileName && window.electronBooks) {
+      // Permanently delete: archive first as safety net, then delete the archive
+      window.electronBooks.deleteBook(fileName);
+    }
     await FRStore.dbDelete('books', deleteTarget.id);
+    const targetId = deleteTarget.id;
     setDeleteTarget(null);
-    refresh();
-  }, [deleteTarget, refresh]);
+    setBooks(prev => prev.filter(b => b.id !== targetId));
+  }, [deleteTarget, findBookFile]);
+
+  const onArchiveBook = useCallback(async () => {
+    if (!deleteTarget) return;
+    const fileName = findBookFile(deleteTarget);
+    if (fileName && window.electronBooks) {
+      window.electronBooks.archiveBook(fileName);
+    }
+    await FRStore.dbDelete('books', deleteTarget.id);
+    const targetId = deleteTarget.id;
+    setDeleteTarget(null);
+    setBooks(prev => prev.filter(b => b.id !== targetId));
+  }, [deleteTarget, findBookFile]);
 
   // Main-shell hotkeys: Escape returns from chat to library, N creates a paste session.
   useEffect(() => {
@@ -3114,7 +3158,8 @@ function App() {
         <DeleteModal
           book={deleteTarget}
           theme={theme}
-          onConfirm={onDeleteConfirm}
+          onArchive={onArchiveBook}
+          onDelete={onDeleteBook}
           onCancel={() => setDeleteTarget(null)}
         />
       )}

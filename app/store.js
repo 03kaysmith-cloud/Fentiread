@@ -334,11 +334,19 @@ async function parseEpub(file) {
 
   // -- Check for FentiRead chapter map (written by fix_book.py) --
   let chapterMap = null;
+  let startChapter = 0;
   try {
     const cmFile = zip.file(opfDir + 'fentiread-chapters.json');
     if (cmFile) {
       const cmJson = await cmFile.async('text');
-      chapterMap = JSON.parse(cmJson);
+      const parsed = JSON.parse(cmJson);
+      // Support both array format and object format { chapters, startChapter }
+      if (Array.isArray(parsed)) {
+        chapterMap = parsed;
+      } else if (parsed && Array.isArray(parsed.chapters)) {
+        chapterMap = parsed.chapters;
+        startChapter = parsed.startChapter || 0;
+      }
     }
   } catch (e) { /* best-effort */ }
 
@@ -471,6 +479,8 @@ async function parseEpub(file) {
     id: 'b_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
     format: 'EPUB',
     title, author, chapters, totalWords, cover,
+    fileName: file.name,
+    startChapter: startChapter || 0,
     addedAt: Date.now(),
     progress: { wordIndex: 0 },
   };

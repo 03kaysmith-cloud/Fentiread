@@ -26,5 +26,30 @@ contextBridge.exposeInMainWorld('electronBooks', {
       console.error('readFile failed:', e);
       return null;
     }
+  },
+  archiveBook: (fileName) => {
+    try {
+      const src = path.join(booksDir, fileName);
+      if (!fs.existsSync(src)) return { ok: false, error: 'File not found' };
+      const archiveDir = path.join(booksDir, 'archive');
+      if (!fs.existsSync(archiveDir)) fs.mkdirSync(archiveDir, { recursive: true });
+      const dest = path.join(archiveDir, fileName);
+      fs.renameSync(src, dest);
+      return { ok: true, dest };
+    } catch (e) {
+      console.error('archiveBook failed:', e);
+      return { ok: false, error: e.message };
+    }
+  },
+  deleteBook: (fileName) => {
+    try {
+      const src = path.join(booksDir, fileName);
+      if (!fs.existsSync(src)) return { ok: false, error: 'File not found' };
+      fs.unlinkSync(src);
+      return { ok: true };
+    } catch (e) {
+      console.error('deleteBook failed:', e);
+      return { ok: false, error: e.message };
+    }
   }
 });

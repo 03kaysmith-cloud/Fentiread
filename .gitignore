@@ -11,6 +11,10 @@ books.db
 # Personal book files
 books/*.epub
 books/raw/
+books/archive/
+
+# Keep example book
+!books/F. Scott Fitzgerald - The Great Gatsby.epub
 
 # Keep the books directory structure
 !books/.gitkeep

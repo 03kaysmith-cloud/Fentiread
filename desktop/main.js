@@ -20,6 +20,7 @@ function createWindow() {
     minHeight: 640,
     title: 'FentiRead',
     icon: iconPath,
+    show: false,
     backgroundColor: '#ffffff',
     webPreferences: {
       contextIsolation: true,
@@ -32,6 +33,7 @@ function createWindow() {
 
   mainWindow = win;
   win.loadFile(path.join(__dirname, '..', 'app', 'index.html'));
+  win.once('ready-to-show', () => win.show());
 
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
