@@ -623,14 +623,33 @@ function Library({ theme, books, onOpen, onAdd, onAddInput, onDelete, onCoverCha
           Indexing {progress.i + 1}/{progress.total} - {progress.name}
         </div>
       )}
-      <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-        columnGap: 28, rowGap: 40, maxWidth: 1200, margin: '0 auto',
-      }}>
-        {books.map(b => (
-          <BookCard key={b.id} book={b} theme={theme} onOpen={() => onOpen(b)} onDelete={() => onDelete(b)} onCoverChange={(file) => onCoverChange(b, file)} />
-        ))}
-      </div>
+      {(() => {
+        const isFinished = (b) => b.totalWords ? Math.round((b.progress?.wordIndex || 0) / b.totalWords * 100) >= 100 : false;
+        const unfinished = books.filter(b => !isFinished(b));
+        const finished = books.filter(b => isFinished(b));
+        const card = (b) => <BookCard key={b.id} book={b} theme={theme} onOpen={() => onOpen(b)} onDelete={() => onDelete(b)} onCoverChange={(file) => onCoverChange(b, file)} />;
+        return <>
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+            columnGap: 28, rowGap: 40, maxWidth: 1200, margin: '0 auto',
+          }}>
+            {unfinished.map(card)}
+          </div>
+          {finished.length > 0 && <>
+            <div style={{ maxWidth: 1200, margin: '48px auto 40px', display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{ flex: 1, height: '0.75px', background: theme.ink, opacity: 0.2 }} />
+              <Mono size={10} opacity={0.4}>Finished</Mono>
+              <div style={{ flex: 1, height: '0.75px', background: theme.ink, opacity: 0.2 }} />
+            </div>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+              columnGap: 28, rowGap: 40, maxWidth: 1200, margin: '0 auto',
+            }}>
+              {finished.map(card)}
+            </div>
+          </>}
+        </>;
+      })()}
     </div>
   );
 }

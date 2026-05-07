@@ -1092,17 +1092,19 @@ function calculateDelay(token, wpm, settings) {
 function DeleteModal(_ref8) {
   var book = _ref8.book,
     theme = _ref8.theme,
-    onConfirm = _ref8.onConfirm,
+    onArchive = _ref8.onArchive,
+    onDelete = _ref8.onDelete,
     onCancel = _ref8.onCancel;
   useEffect(function () {
     var onKey = function onKey(e) {
-      if (e.key === 'Escape') onCancel();else if (e.key === 'Enter') onConfirm();
+      if (e.key === 'Escape') onCancel();
     };
     window.addEventListener('keydown', onKey);
     return function () {
       return window.removeEventListener('keydown', onKey);
     };
-  }, [onConfirm, onCancel]);
+  }, [onCancel]);
+  var hasElectron = !!window.electronBooks;
   return /*#__PURE__*/React.createElement("div", {
     onClick: onCancel,
     style: {
@@ -1119,7 +1121,7 @@ function DeleteModal(_ref8) {
       return e.stopPropagation();
     },
     style: {
-      width: 420,
+      width: 440,
       maxWidth: '90vw',
       background: theme.bg,
       border: "0.75px solid ".concat(theme.ink),
@@ -1138,9 +1140,16 @@ function DeleteModal(_ref8) {
       fontSize: 15,
       lineHeight: 1.5,
       opacity: 0.7,
+      marginBottom: hasElectron ? 16 : 28
+    }
+  }, "\"", book.title, "\" will be removed from your library."), hasElectron && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      lineHeight: 1.5,
+      opacity: 0.5,
       marginBottom: 28
     }
-  }, "\"", book.title, "\" will be removed from your library. This can't be undone."), /*#__PURE__*/React.createElement("div", {
+  }, "Archive moves the file to books/archive. Delete removes it permanently."), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       gap: 12,
@@ -1149,10 +1158,17 @@ function DeleteModal(_ref8) {
   }, /*#__PURE__*/React.createElement("button", {
     onClick: onCancel,
     style: secondaryBtn(theme)
-  }, "Cancel"), /*#__PURE__*/React.createElement("button", {
-    onClick: onConfirm,
-    style: primaryBtn(theme)
-  }, "Remove"))));
+  }, "Cancel"), hasElectron && /*#__PURE__*/React.createElement("button", {
+    onClick: onArchive,
+    style: secondaryBtn(theme)
+  }, "Archive"), /*#__PURE__*/React.createElement("button", {
+    onClick: onDelete,
+    style: _objectSpread(_objectSpread({}, primaryBtn(theme)), {}, {
+      background: '#c33',
+      color: '#fff',
+      borderColor: '#c33'
+    })
+  }, "Delete"))));
 }
 
 // -- Empty library / welcome --
@@ -1334,31 +1350,78 @@ function Library(_ref0) {
       fontSize: 11,
       opacity: 0.65
     }
-  }, "Indexing ", progress.i + 1, "/", progress.total, " - ", progress.name), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-      columnGap: 28,
-      rowGap: 40,
-      maxWidth: 1200,
-      margin: '0 auto'
-    }
-  }, books.map(function (b) {
-    return /*#__PURE__*/React.createElement(BookCard, {
-      key: b.id,
-      book: b,
-      theme: theme,
-      onOpen: function onOpen() {
-        return _onOpen(b);
-      },
-      onDelete: function onDelete() {
-        return _onDelete(b);
-      },
-      onCoverChange: function onCoverChange(file) {
-        return _onCoverChange(b, file);
-      }
+  }, "Indexing ", progress.i + 1, "/", progress.total, " - ", progress.name), function () {
+    var isFinished = function isFinished(b) {
+      var _b$progress;
+      return b.totalWords ? Math.round((((_b$progress = b.progress) === null || _b$progress === void 0 ? void 0 : _b$progress.wordIndex) || 0) / b.totalWords * 100) >= 100 : false;
+    };
+    var unfinished = books.filter(function (b) {
+      return !isFinished(b);
     });
-  })));
+    var finished = books.filter(function (b) {
+      return isFinished(b);
+    });
+    var card = function card(b) {
+      return /*#__PURE__*/React.createElement(BookCard, {
+        key: b.id,
+        book: b,
+        theme: theme,
+        onOpen: function onOpen() {
+          return _onOpen(b);
+        },
+        onDelete: function onDelete() {
+          return _onDelete(b);
+        },
+        onCoverChange: function onCoverChange(file) {
+          return _onCoverChange(b, file);
+        }
+      });
+    };
+    return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+        columnGap: 28,
+        rowGap: 40,
+        maxWidth: 1200,
+        margin: '0 auto'
+      }
+    }, unfinished.map(card)), finished.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        maxWidth: 1200,
+        margin: '48px auto 40px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        height: '0.75px',
+        background: theme.ink,
+        opacity: 0.2
+      }
+    }), /*#__PURE__*/React.createElement(Mono, {
+      size: 10,
+      opacity: 0.4
+    }, "Finished"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        height: '0.75px',
+        background: theme.ink,
+        opacity: 0.2
+      }
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+        columnGap: 28,
+        rowGap: 40,
+        maxWidth: 1200,
+        margin: '0 auto'
+      }
+    }, finished.map(card))));
+  }());
 }
 function BookCard(_ref1) {
   var _book$progress;
@@ -1563,10 +1626,14 @@ function Reader(_ref10) {
   var initialIdx = useMemo(function () {
     var _book$progress2;
     var savedWordIdx = ((_book$progress2 = book.progress) === null || _book$progress2 === void 0 ? void 0 : _book$progress2.wordIndex) || 0;
+    // If no saved progress but book has a startChapter, jump to that chapter
+    if (savedWordIdx <= 0 && book.startChapter > 0 && chapterStarts.length > book.startChapter) {
+      return chapterStarts[book.startChapter];
+    }
     if (savedWordIdx <= 0 || wordTokenIndices.length === 0) return 0;
     var clamped = Math.max(0, Math.min(wordTokenIndices.length - 1, savedWordIdx));
     return wordTokenIndices[clamped];
-  }, [book.id, wordTokenIndices]);
+  }, [book.id, wordTokenIndices, chapterStarts]);
   var _useState13 = useState(initialIdx),
     _useState14 = _slicedToArray(_useState13, 2),
     idx = _useState14[0],
@@ -3355,7 +3422,7 @@ function PageView(_ref13) {
   }, /*#__PURE__*/React.createElement(Mono, {
     size: 10,
     opacity: 0.5
-  }, "tap a word to read from there - hold to bookmark - arrows to flip"))), toast && /*#__PURE__*/React.createElement("div", {
+  }, "tap a word to read from there"))), toast && /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
       bottom: 80,
@@ -3746,21 +3813,21 @@ function generatePasteTitle(_x) {
   return _generatePasteTitle.apply(this, arguments);
 }
 function _generatePasteTitle() {
-  _generatePasteTitle = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee18(text) {
-    var key, _data$choices, snippet, resp, data, _t0;
-    return _regenerator().w(function (_context18) {
-      while (1) switch (_context18.p = _context18.n) {
+  _generatePasteTitle = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee20(text) {
+    var key, _data$choices, snippet, resp, data, _t1;
+    return _regenerator().w(function (_context20) {
+      while (1) switch (_context20.p = _context20.n) {
         case 0:
           key = localStorage.getItem(OPENAI_KEY_STORAGE);
           if (key) {
-            _context18.n = 1;
+            _context20.n = 1;
             break;
           }
-          return _context18.a(2, null);
+          return _context20.a(2, null);
         case 1:
-          _context18.p = 1;
+          _context20.p = 1;
           snippet = text.slice(0, 1000);
-          _context18.n = 2;
+          _context20.n = 2;
           return fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -3780,24 +3847,24 @@ function _generatePasteTitle() {
             })
           });
         case 2:
-          resp = _context18.v;
+          resp = _context20.v;
           if (resp.ok) {
-            _context18.n = 3;
+            _context20.n = 3;
             break;
           }
-          return _context18.a(2, null);
+          return _context20.a(2, null);
         case 3:
-          _context18.n = 4;
+          _context20.n = 4;
           return resp.json();
         case 4:
-          data = _context18.v;
-          return _context18.a(2, ((_data$choices = data.choices) === null || _data$choices === void 0 || (_data$choices = _data$choices[0]) === null || _data$choices === void 0 || (_data$choices = _data$choices.message) === null || _data$choices === void 0 || (_data$choices = _data$choices.content) === null || _data$choices === void 0 ? void 0 : _data$choices.trim()) || null);
+          data = _context20.v;
+          return _context20.a(2, ((_data$choices = data.choices) === null || _data$choices === void 0 || (_data$choices = _data$choices[0]) === null || _data$choices === void 0 || (_data$choices = _data$choices.message) === null || _data$choices === void 0 || (_data$choices = _data$choices.content) === null || _data$choices === void 0 ? void 0 : _data$choices.trim()) || null);
         case 5:
-          _context18.p = 5;
-          _t0 = _context18.v;
-          return _context18.a(2, null);
+          _context20.p = 5;
+          _t1 = _context20.v;
+          return _context20.a(2, null);
       }
-    }, _callee18, null, [[1, 5]]);
+    }, _callee20, null, [[1, 5]]);
   }));
   return _generatePasteTitle.apply(this, arguments);
 }
@@ -5366,58 +5433,75 @@ function App() {
   var supported = !!window.showDirectoryPicker;
   var theme = useTheme(dark);
   useEffect(function () {
-    _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
-      var list, s, result, updated, _t2;
-      return _regenerator().w(function (_context2) {
-        while (1) switch (_context2.p = _context2.n) {
+    _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
+      var list, s, _t3;
+      return _regenerator().w(function (_context3) {
+        while (1) switch (_context3.p = _context3.n) {
           case 0:
-            _context2.p = 0;
-            _context2.n = 1;
+            _context3.p = 0;
+            _context3.n = 1;
             return FRStore.dbAll('books');
           case 1:
-            list = _context2.v;
+            list = _context3.v;
             list.sort(function (a, b) {
               return (b.lastReadAt || b.addedAt || 0) - (a.lastReadAt || a.addedAt || 0);
             });
             setBooks(list);
-            _context2.n = 2;
+            _context3.n = 2;
             return FRStore.dbGet('settings', 'app');
           case 2:
-            s = _context2.v;
+            s = _context3.v;
             if (s) {
               setSettings(function (prev) {
                 return _objectSpread(_objectSpread({}, prev), s.value);
               });
               if (s.value.dark != null) setDark(!!s.value.dark);
             }
-            // Auto-scan saved library folder for new books
-            _context2.n = 3;
-            return FRStore.autoScanLibrary();
-          case 3:
-            result = _context2.v;
-            if (!(result && result.added > 0)) {
-              _context2.n = 5;
-              break;
-            }
-            _context2.n = 4;
-            return FRStore.dbAll('books');
-          case 4:
-            updated = _context2.v;
-            updated.sort(function (a, b) {
-              return (b.addedAt || 0) - (a.addedAt || 0);
-            });
-            setBooks(updated);
-          case 5:
-            _context2.n = 7;
+            _context3.n = 4;
             break;
-          case 6:
-            _context2.p = 6;
-            _t2 = _context2.v;
-            console.error(_t2);
-          case 7:
-            return _context2.a(2);
+          case 3:
+            _context3.p = 3;
+            _t3 = _context3.v;
+            console.error(_t3);
+          case 4:
+            // Scan for new books in background (after UI is visible)
+            setTimeout(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
+              var result, updated, _t2;
+              return _regenerator().w(function (_context2) {
+                while (1) switch (_context2.p = _context2.n) {
+                  case 0:
+                    _context2.p = 0;
+                    _context2.n = 1;
+                    return FRStore.autoScanLibrary();
+                  case 1:
+                    result = _context2.v;
+                    if (!(result && result.added > 0)) {
+                      _context2.n = 3;
+                      break;
+                    }
+                    _context2.n = 2;
+                    return FRStore.dbAll('books');
+                  case 2:
+                    updated = _context2.v;
+                    updated.sort(function (a, b) {
+                      return (b.addedAt || 0) - (a.addedAt || 0);
+                    });
+                    setBooks(updated);
+                  case 3:
+                    _context2.n = 5;
+                    break;
+                  case 4:
+                    _context2.p = 4;
+                    _t2 = _context2.v;
+                  case 5:
+                    return _context2.a(2);
+                }
+              }, _callee2, null, [[0, 4]]);
+            })), 50);
+          case 5:
+            return _context3.a(2);
         }
-      }, _callee2, null, [[0, 6]]);
+      }, _callee3, null, [[0, 3]]);
     }))();
   }, []);
 
@@ -5446,47 +5530,47 @@ function App() {
       value: combined
     })["catch"](function () {});
   }, [settings, dark]);
-  var refresh = useCallback(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
-    var list, _t3;
-    return _regenerator().w(function (_context3) {
-      while (1) switch (_context3.p = _context3.n) {
+  var refresh = useCallback(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
+    var list, _t4;
+    return _regenerator().w(function (_context4) {
+      while (1) switch (_context4.p = _context4.n) {
         case 0:
-          _context3.p = 0;
-          _context3.n = 1;
+          _context4.p = 0;
+          _context4.n = 1;
           return FRStore.autoScanLibrary();
         case 1:
-          _context3.n = 3;
+          _context4.n = 3;
           break;
         case 2:
-          _context3.p = 2;
-          _t3 = _context3.v;
+          _context4.p = 2;
+          _t4 = _context4.v;
         case 3:
-          _context3.n = 4;
+          _context4.n = 4;
           return FRStore.dbAll('books');
         case 4:
-          list = _context3.v;
+          list = _context4.v;
           list.sort(function (a, b) {
             return (b.lastReadAt || b.addedAt || 0) - (a.lastReadAt || a.addedAt || 0);
           });
           setBooks(list);
         case 5:
-          return _context3.a(2);
+          return _context4.a(2);
       }
-    }, _callee3, null, [[0, 2]]);
+    }, _callee4, null, [[0, 2]]);
   })), []);
-  var refreshPasteSessions = useCallback(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
+  var refreshPasteSessions = useCallback(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5() {
     var list;
-    return _regenerator().w(function (_context4) {
-      while (1) switch (_context4.n) {
+    return _regenerator().w(function (_context5) {
+      while (1) switch (_context5.n) {
         case 0:
-          _context4.n = 1;
+          _context5.n = 1;
           return FRStore.listPasteSessions();
         case 1:
-          list = _context4.v;
+          list = _context5.v;
           setPasteSessions(list);
-          return _context4.a(2, list);
+          return _context5.a(2, list);
       }
-    }, _callee4);
+    }, _callee5);
   })), []);
   useEffect(function () {
     refreshPasteSessions()["catch"](console.error);
@@ -5501,100 +5585,76 @@ function App() {
 
   // Clean up empty sessions when navigating away
   var cleanupEmptySession = useCallback(/*#__PURE__*/function () {
-    var _ref37 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5(sessionId) {
-      var pastes, _t4;
-      return _regenerator().w(function (_context5) {
-        while (1) switch (_context5.p = _context5.n) {
+    var _ref38 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6(sessionId) {
+      var pastes, _t5;
+      return _regenerator().w(function (_context6) {
+        while (1) switch (_context6.p = _context6.n) {
           case 0:
             if (sessionId) {
-              _context5.n = 1;
+              _context6.n = 1;
               break;
             }
-            return _context5.a(2);
+            return _context6.a(2);
           case 1:
-            _context5.p = 1;
-            _context5.n = 2;
+            _context6.p = 1;
+            _context6.n = 2;
             return FRStore.getPastesBySession(sessionId);
           case 2:
-            pastes = _context5.v;
+            pastes = _context6.v;
             if (!(pastes.length === 0)) {
-              _context5.n = 3;
+              _context6.n = 3;
               break;
             }
-            _context5.n = 3;
+            _context6.n = 3;
             return FRStore.deletePasteSession(sessionId);
           case 3:
-            _context5.n = 5;
+            _context6.n = 5;
             break;
           case 4:
-            _context5.p = 4;
-            _t4 = _context5.v;
+            _context6.p = 4;
+            _t5 = _context6.v;
           case 5:
-            return _context5.a(2);
+            return _context6.a(2);
         }
-      }, _callee5, null, [[1, 4]]);
+      }, _callee6, null, [[1, 4]]);
     }));
     return function (_x2) {
-      return _ref37.apply(this, arguments);
+      return _ref38.apply(this, arguments);
     };
   }(), []);
-  var handleNewPasteSession = useCallback(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6() {
+  var handleNewPasteSession = useCallback(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee7() {
     var prevId, session;
-    return _regenerator().w(function (_context6) {
-      while (1) switch (_context6.n) {
+    return _regenerator().w(function (_context7) {
+      while (1) switch (_context7.n) {
         case 0:
           prevId = activeSessionId;
-          _context6.n = 1;
+          _context7.n = 1;
           return FRStore.createPasteSession();
         case 1:
-          session = _context6.v;
+          session = _context7.v;
           setActivePasteId(null);
           setHighlightedPasteId(null);
           setActiveSessionId(session.id);
-          _context6.n = 2;
+          _context7.n = 2;
           return cleanupEmptySession(prevId);
         case 2:
-          _context6.n = 3;
+          _context7.n = 3;
           return refreshPasteSessions();
         case 3:
-          return _context6.a(2);
+          return _context7.a(2);
       }
-    }, _callee6);
+    }, _callee7);
   })), [activeSessionId, cleanupEmptySession, refreshPasteSessions]);
   var handleRenamePasteSession = useCallback(/*#__PURE__*/function () {
-    var _ref39 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee7(sessionId, title) {
-      return _regenerator().w(function (_context7) {
-        while (1) switch (_context7.n) {
-          case 0:
-            _context7.n = 1;
-            return FRStore.updatePasteSession(sessionId, {
-              title: title
-            });
-          case 1:
-            _context7.n = 2;
-            return refreshPasteSessions();
-          case 2:
-            return _context7.a(2);
-        }
-      }, _callee7);
-    }));
-    return function (_x3, _x4) {
-      return _ref39.apply(this, arguments);
-    };
-  }(), [refreshPasteSessions]);
-  var handleDeletePasteSession = useCallback(/*#__PURE__*/function () {
-    var _ref40 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee8(sessionId) {
+    var _ref40 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee8(sessionId, title) {
       return _regenerator().w(function (_context8) {
         while (1) switch (_context8.n) {
           case 0:
             _context8.n = 1;
-            return FRStore.deletePasteSession(sessionId);
+            return FRStore.updatePasteSession(sessionId, {
+              title: title
+            });
           case 1:
-            if (activeSessionId === sessionId) {
-              setActiveSessionId(null);
-              setActivePasteId(null);
-              setActivePastes([]);
-            }
             _context8.n = 2;
             return refreshPasteSessions();
           case 2:
@@ -5602,151 +5662,175 @@ function App() {
         }
       }, _callee8);
     }));
-    return function (_x5) {
+    return function (_x3, _x4) {
       return _ref40.apply(this, arguments);
+    };
+  }(), [refreshPasteSessions]);
+  var handleDeletePasteSession = useCallback(/*#__PURE__*/function () {
+    var _ref41 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee9(sessionId) {
+      return _regenerator().w(function (_context9) {
+        while (1) switch (_context9.n) {
+          case 0:
+            _context9.n = 1;
+            return FRStore.deletePasteSession(sessionId);
+          case 1:
+            if (activeSessionId === sessionId) {
+              setActiveSessionId(null);
+              setActivePasteId(null);
+              setActivePastes([]);
+            }
+            _context9.n = 2;
+            return refreshPasteSessions();
+          case 2:
+            return _context9.a(2);
+        }
+      }, _callee9);
+    }));
+    return function (_x5) {
+      return _ref41.apply(this, arguments);
     };
   }(), [activeSessionId, refreshPasteSessions]);
   var handlePasteSubmit = useCallback(/*#__PURE__*/function () {
-    var _ref41 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee0(text) {
+    var _ref42 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee1(text) {
       var sessionId, isNewSession, session, paste, updatedPastes;
-      return _regenerator().w(function (_context0) {
-        while (1) switch (_context0.n) {
+      return _regenerator().w(function (_context1) {
+        while (1) switch (_context1.n) {
           case 0:
             sessionId = activeSessionId;
             isNewSession = false;
             if (sessionId) {
-              _context0.n = 2;
+              _context1.n = 2;
               break;
             }
-            _context0.n = 1;
+            _context1.n = 1;
             return FRStore.createPasteSession();
           case 1:
-            session = _context0.v;
+            session = _context1.v;
             sessionId = session.id;
             setActiveSessionId(sessionId);
             isNewSession = true;
           case 2:
-            _context0.n = 3;
+            _context1.n = 3;
             return FRStore.addPaste(sessionId, text);
           case 3:
-            paste = _context0.v;
+            paste = _context1.v;
             if (paste) {
-              _context0.n = 4;
+              _context1.n = 4;
               break;
             }
-            return _context0.a(2, null);
+            return _context1.a(2, null);
           case 4:
-            _context0.n = 5;
+            _context1.n = 5;
             return FRStore.getPastesBySession(sessionId);
           case 5:
-            updatedPastes = _context0.v;
+            updatedPastes = _context1.v;
             setActivePastes(updatedPastes);
-            _context0.n = 6;
+            _context1.n = 6;
             return refreshPasteSessions();
           case 6:
             // Auto-generate title on first paste in session
             if (isNewSession || updatedPastes.length === 1) {
               generatePasteTitle(text).then(/*#__PURE__*/function () {
-                var _ref42 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee9(title) {
-                  return _regenerator().w(function (_context9) {
-                    while (1) switch (_context9.n) {
+                var _ref43 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee0(title) {
+                  return _regenerator().w(function (_context0) {
+                    while (1) switch (_context0.n) {
                       case 0:
                         if (!title) {
-                          _context9.n = 2;
+                          _context0.n = 2;
                           break;
                         }
-                        _context9.n = 1;
+                        _context0.n = 1;
                         return FRStore.updatePasteSession(sessionId, {
                           title: title
                         });
                       case 1:
-                        _context9.n = 2;
+                        _context0.n = 2;
                         return refreshPasteSessions();
                       case 2:
-                        return _context9.a(2);
+                        return _context0.a(2);
                     }
-                  }, _callee9);
+                  }, _callee0);
                 }));
                 return function (_x7) {
-                  return _ref42.apply(this, arguments);
+                  return _ref43.apply(this, arguments);
                 };
               }());
             }
-            return _context0.a(2, paste);
+            return _context1.a(2, paste);
         }
-      }, _callee0);
+      }, _callee1);
     }));
     return function (_x6) {
-      return _ref41.apply(this, arguments);
+      return _ref42.apply(this, arguments);
     };
   }(), [activeSessionId, refreshPasteSessions]);
   var handlePasteProgress = useCallback(/*#__PURE__*/function () {
-    var _ref44 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee1(_ref43) {
-      var wordIndex, totalWords, complete, readIdx, updates, _t5;
-      return _regenerator().w(function (_context1) {
-        while (1) switch (_context1.n) {
+    var _ref45 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee10(_ref44) {
+      var wordIndex, totalWords, complete, readIdx, updates, _t6;
+      return _regenerator().w(function (_context10) {
+        while (1) switch (_context10.n) {
           case 0:
-            wordIndex = _ref43.wordIndex, totalWords = _ref43.totalWords, complete = _ref43.complete;
+            wordIndex = _ref44.wordIndex, totalWords = _ref44.totalWords, complete = _ref44.complete;
             if (!(!activePasteId || !activeSessionId)) {
-              _context1.n = 1;
+              _context10.n = 1;
               break;
             }
-            return _context1.a(2);
+            return _context10.a(2);
           case 1:
             readIdx = complete ? totalWords : Math.min(wordIndex, totalWords);
             updates = {
               readIdx: readIdx
             };
             if (complete) updates.readAt = Date.now();
-            _context1.n = 2;
+            _context10.n = 2;
             return FRStore.updatePaste(activePasteId, updates);
           case 2:
-            _t5 = setActivePastes;
-            _context1.n = 3;
+            _t6 = setActivePastes;
+            _context10.n = 3;
             return FRStore.getPastesBySession(activeSessionId);
           case 3:
-            _t5(_context1.v);
+            _t6(_context10.v);
           case 4:
-            return _context1.a(2);
+            return _context10.a(2);
         }
-      }, _callee1);
+      }, _callee10);
     }));
     return function (_x8) {
-      return _ref44.apply(this, arguments);
+      return _ref45.apply(this, arguments);
     };
   }(), [activePasteId, activeSessionId]);
   var handleDeletePaste = useCallback(/*#__PURE__*/function () {
-    var _ref45 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee10(paste) {
-      var sessionId, updated, _t6;
-      return _regenerator().w(function (_context10) {
-        while (1) switch (_context10.n) {
+    var _ref46 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee11(paste) {
+      var sessionId, updated, _t7;
+      return _regenerator().w(function (_context11) {
+        while (1) switch (_context11.n) {
           case 0:
             if (paste) {
-              _context10.n = 1;
+              _context11.n = 1;
               break;
             }
-            return _context10.a(2);
+            return _context11.a(2);
           case 1:
             sessionId = paste.sessionId || activeSessionId;
-            _context10.n = 2;
+            _context11.n = 2;
             return FRStore.deletePaste(paste.id);
           case 2:
             if (!sessionId) {
-              _context10.n = 4;
+              _context11.n = 4;
               break;
             }
-            _context10.n = 3;
+            _context11.n = 3;
             return FRStore.getPastesBySession(sessionId);
           case 3:
-            _t6 = _context10.v;
-            _context10.n = 5;
+            _t7 = _context11.v;
+            _context11.n = 5;
             break;
           case 4:
-            _t6 = [];
+            _t7 = [];
           case 5:
-            updated = _t6;
+            updated = _t7;
             setActivePastes(updated);
-            _context10.n = 6;
+            _context11.n = 6;
             return refreshPasteSessions();
           case 6:
             if (activePasteId === paste.id) {
@@ -5754,46 +5838,15 @@ function App() {
             }
             if (highlightedPasteId === paste.id) setHighlightedPasteId(null);
           case 7:
-            return _context10.a(2);
+            return _context11.a(2);
         }
-      }, _callee10);
+      }, _callee11);
     }));
     return function (_x9) {
-      return _ref45.apply(this, arguments);
+      return _ref46.apply(this, arguments);
     };
   }(), [activePasteId, activeSessionId, highlightedPasteId, refreshPasteSessions]);
-  var onRefreshLibrary = useCallback(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee11() {
-    var _t7;
-    return _regenerator().w(function (_context11) {
-      while (1) switch (_context11.p = _context11.n) {
-        case 0:
-          setBusy(true);
-          _context11.p = 1;
-          _context11.n = 2;
-          return FRStore.autoScanLibrary(function (p) {
-            return setProgress(p);
-          });
-        case 2:
-          _context11.n = 3;
-          return refresh();
-        case 3:
-          _context11.n = 5;
-          break;
-        case 4:
-          _context11.p = 4;
-          _t7 = _context11.v;
-          console.error('Refresh failed:', _t7);
-        case 5:
-          _context11.p = 5;
-          setBusy(false);
-          setProgress(null);
-          return _context11.f(5);
-        case 6:
-          return _context11.a(2);
-      }
-    }, _callee11, null, [[1, 4, 5, 6]]);
-  })), [refresh]);
-  var onPickFolder = useCallback(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee12() {
+  var onRefreshLibrary = useCallback(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee12() {
     var _t8;
     return _regenerator().w(function (_context12) {
       while (1) switch (_context12.p = _context12.n) {
@@ -5801,7 +5854,7 @@ function App() {
           setBusy(true);
           _context12.p = 1;
           _context12.n = 2;
-          return FRStore.pickFolder(function (p) {
+          return FRStore.autoScanLibrary(function (p) {
             return setProgress(p);
           });
         case 2:
@@ -5813,7 +5866,7 @@ function App() {
         case 4:
           _context12.p = 4;
           _t8 = _context12.v;
-          if (_t8.name !== 'AbortError') console.error('Folder pick failed:', _t8);
+          console.error('Refresh failed:', _t8);
         case 5:
           _context12.p = 5;
           setBusy(false);
@@ -5824,109 +5877,192 @@ function App() {
       }
     }, _callee12, null, [[1, 4, 5, 6]]);
   })), [refresh]);
+  var onPickFolder = useCallback(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee13() {
+    var _t9;
+    return _regenerator().w(function (_context13) {
+      while (1) switch (_context13.p = _context13.n) {
+        case 0:
+          setBusy(true);
+          _context13.p = 1;
+          _context13.n = 2;
+          return FRStore.pickFolder(function (p) {
+            return setProgress(p);
+          });
+        case 2:
+          _context13.n = 3;
+          return refresh();
+        case 3:
+          _context13.n = 5;
+          break;
+        case 4:
+          _context13.p = 4;
+          _t9 = _context13.v;
+          if (_t9.name !== 'AbortError') console.error('Folder pick failed:', _t9);
+        case 5:
+          _context13.p = 5;
+          setBusy(false);
+          setProgress(null);
+          return _context13.f(5);
+        case 6:
+          return _context13.a(2);
+      }
+    }, _callee13, null, [[1, 4, 5, 6]]);
+  })), [refresh]);
   var onPickInput = useCallback(/*#__PURE__*/function () {
-    var _ref48 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee13(e) {
-      var fileList, entries, _t9;
-      return _regenerator().w(function (_context13) {
-        while (1) switch (_context13.p = _context13.n) {
+    var _ref49 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee14(e) {
+      var fileList, entries, _t0;
+      return _regenerator().w(function (_context14) {
+        while (1) switch (_context14.p = _context14.n) {
           case 0:
             fileList = Array.from(e.target.files || []);
             if (fileList.length) {
-              _context13.n = 1;
+              _context14.n = 1;
               break;
             }
-            return _context13.a(2);
+            return _context14.a(2);
           case 1:
             setBusy(true);
-            _context13.p = 2;
+            _context14.p = 2;
             entries = fileList.map(function (f) {
               return {
                 name: f.name,
                 file: f
               };
             });
-            _context13.n = 3;
+            _context14.n = 3;
             return FRStore.ingestFiles(entries, function (p) {
               return setProgress(p);
             });
           case 3:
-            _context13.n = 4;
-            return refresh();
-          case 4:
-            _context13.n = 6;
-            break;
-          case 5:
-            _context13.p = 5;
-            _t9 = _context13.v;
-            console.error('Ingestion failed:', _t9);
-          case 6:
-            _context13.p = 6;
-            setBusy(false);
-            setProgress(null);
-            e.target.value = '';
-            return _context13.f(6);
-          case 7:
-            return _context13.a(2);
-        }
-      }, _callee13, null, [[2, 5, 6, 7]]);
-    }));
-    return function (_x0) {
-      return _ref48.apply(this, arguments);
-    };
-  }(), [refresh]);
-  var onCoverChange = useCallback(/*#__PURE__*/function () {
-    var _ref49 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee14(book, file) {
-      var resized, fresh;
-      return _regenerator().w(function (_context14) {
-        while (1) switch (_context14.n) {
-          case 0:
-            _context14.n = 1;
-            return FRStore.resizeCover(file);
-          case 1:
-            resized = _context14.v;
-            _context14.n = 2;
-            return FRStore.dbGet('books', book.id);
-          case 2:
-            fresh = _context14.v;
-            if (!fresh) {
-              _context14.n = 4;
-              break;
-            }
-            fresh.cover = resized;
-            _context14.n = 3;
-            return FRStore.dbPut('books', fresh);
-          case 3:
             _context14.n = 4;
             return refresh();
           case 4:
+            _context14.n = 6;
+            break;
+          case 5:
+            _context14.p = 5;
+            _t0 = _context14.v;
+            console.error('Ingestion failed:', _t0);
+          case 6:
+            _context14.p = 6;
+            setBusy(false);
+            setProgress(null);
+            e.target.value = '';
+            return _context14.f(6);
+          case 7:
             return _context14.a(2);
         }
-      }, _callee14);
+      }, _callee14, null, [[2, 5, 6, 7]]);
     }));
-    return function (_x1, _x10) {
+    return function (_x0) {
       return _ref49.apply(this, arguments);
     };
   }(), [refresh]);
-  var onDeleteConfirm = useCallback(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee15() {
-    return _regenerator().w(function (_context15) {
-      while (1) switch (_context15.n) {
+  var onCoverChange = useCallback(/*#__PURE__*/function () {
+    var _ref50 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee15(book, file) {
+      var resized, fresh;
+      return _regenerator().w(function (_context15) {
+        while (1) switch (_context15.n) {
+          case 0:
+            _context15.n = 1;
+            return FRStore.resizeCover(file);
+          case 1:
+            resized = _context15.v;
+            _context15.n = 2;
+            return FRStore.dbGet('books', book.id);
+          case 2:
+            fresh = _context15.v;
+            if (!fresh) {
+              _context15.n = 4;
+              break;
+            }
+            fresh.cover = resized;
+            _context15.n = 3;
+            return FRStore.dbPut('books', fresh);
+          case 3:
+            _context15.n = 4;
+            return refresh();
+          case 4:
+            return _context15.a(2);
+        }
+      }, _callee15);
+    }));
+    return function (_x1, _x10) {
+      return _ref50.apply(this, arguments);
+    };
+  }(), [refresh]);
+  var findBookFile = useCallback(function (book) {
+    if (!window.electronBooks) return null;
+    if (book.fileName) return book.fileName;
+    // Match by title/author in the books directory
+    var epubs = window.electronBooks.listEpubs();
+    var needle = (book.title || '').toLowerCase();
+    var match = epubs.find(function (ep) {
+      return ep.name.toLowerCase().includes(needle);
+    });
+    return match ? match.name : null;
+  }, []);
+  var onDeleteBook = useCallback(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee16() {
+    var fileName, targetId;
+    return _regenerator().w(function (_context16) {
+      while (1) switch (_context16.n) {
         case 0:
           if (deleteTarget) {
-            _context15.n = 1;
+            _context16.n = 1;
             break;
           }
-          return _context15.a(2);
+          return _context16.a(2);
         case 1:
-          _context15.n = 2;
+          fileName = findBookFile(deleteTarget);
+          if (fileName && window.electronBooks) {
+            // Permanently delete: archive first as safety net, then delete the archive
+            window.electronBooks.deleteBook(fileName);
+          }
+          _context16.n = 2;
           return FRStore.dbDelete('books', deleteTarget.id);
         case 2:
+          targetId = deleteTarget.id;
           setDeleteTarget(null);
-          refresh();
+          setBooks(function (prev) {
+            return prev.filter(function (b) {
+              return b.id !== targetId;
+            });
+          });
         case 3:
-          return _context15.a(2);
+          return _context16.a(2);
       }
-    }, _callee15);
-  })), [deleteTarget, refresh]);
+    }, _callee16);
+  })), [deleteTarget, findBookFile]);
+  var onArchiveBook = useCallback(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee17() {
+    var fileName, targetId;
+    return _regenerator().w(function (_context17) {
+      while (1) switch (_context17.n) {
+        case 0:
+          if (deleteTarget) {
+            _context17.n = 1;
+            break;
+          }
+          return _context17.a(2);
+        case 1:
+          fileName = findBookFile(deleteTarget);
+          if (fileName && window.electronBooks) {
+            window.electronBooks.archiveBook(fileName);
+          }
+          _context17.n = 2;
+          return FRStore.dbDelete('books', deleteTarget.id);
+        case 2:
+          targetId = deleteTarget.id;
+          setDeleteTarget(null);
+          setBooks(function (prev) {
+            return prev.filter(function (b) {
+              return b.id !== targetId;
+            });
+          });
+        case 3:
+          return _context17.a(2);
+      }
+    }, _callee17);
+  })), [deleteTarget, findBookFile]);
 
   // Main-shell hotkeys: Escape returns from chat to library, N creates a paste session.
   useEffect(function () {
@@ -5949,47 +6085,47 @@ function App() {
   }, [openBookId, activePasteId, activeSessionId, handleNewPasteSession]);
   useEffect(function () {
     var onPaste = /*#__PURE__*/function () {
-      var _ref51 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee16(e) {
+      var _ref53 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee18(e) {
         var _e$clipboardData;
         var text, paste;
-        return _regenerator().w(function (_context16) {
-          while (1) switch (_context16.n) {
+        return _regenerator().w(function (_context18) {
+          while (1) switch (_context18.n) {
             case 0:
               if (!(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
-                _context16.n = 1;
+                _context18.n = 1;
                 break;
               }
-              return _context16.a(2);
+              return _context18.a(2);
             case 1:
               if (!(openBookId || !activeSessionId)) {
-                _context16.n = 2;
+                _context18.n = 2;
                 break;
               }
-              return _context16.a(2);
+              return _context18.a(2);
             case 2:
               text = (_e$clipboardData = e.clipboardData) === null || _e$clipboardData === void 0 ? void 0 : _e$clipboardData.getData('text/plain');
               if (text !== null && text !== void 0 && text.trim()) {
-                _context16.n = 3;
+                _context18.n = 3;
                 break;
               }
-              return _context16.a(2);
+              return _context18.a(2);
             case 3:
               e.preventDefault();
-              _context16.n = 4;
+              _context18.n = 4;
               return handlePasteSubmit(text);
             case 4:
-              paste = _context16.v;
+              paste = _context18.v;
               if (paste && activePasteId) {
                 setHighlightedPasteId(null);
                 setActivePasteId(paste.id);
               }
             case 5:
-              return _context16.a(2);
+              return _context18.a(2);
           }
-        }, _callee16);
+        }, _callee18);
       }));
       return function onPaste(_x11) {
-        return _ref51.apply(this, arguments);
+        return _ref53.apply(this, arguments);
       };
     }();
     window.addEventListener('paste', onPaste);
@@ -6037,25 +6173,25 @@ function App() {
       },
       onProgressChange: handlePasteProgress,
       onSelectSession: (/*#__PURE__*/function () {
-        var _ref52 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee17(id) {
+        var _ref54 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee19(id) {
           var nextPastes;
-          return _regenerator().w(function (_context17) {
-            while (1) switch (_context17.n) {
+          return _regenerator().w(function (_context19) {
+            while (1) switch (_context19.n) {
               case 0:
                 setActiveSessionId(id);
-                _context17.n = 1;
+                _context19.n = 1;
                 return FRStore.getPastesBySession(id);
               case 1:
-                nextPastes = _context17.v;
+                nextPastes = _context19.v;
                 setActivePastes(nextPastes);
                 setActivePasteId(pickReadablePasteId(nextPastes));
               case 2:
-                return _context17.a(2);
+                return _context19.a(2);
             }
-          }, _callee17);
+          }, _callee19);
         }));
         return function (_x12) {
-          return _ref52.apply(this, arguments);
+          return _ref54.apply(this, arguments);
         };
       }()),
       onNewSession: handleNewPasteSession,
@@ -6171,7 +6307,8 @@ function App() {
   }, content), deleteTarget && /*#__PURE__*/React.createElement(DeleteModal, {
     book: deleteTarget,
     theme: theme,
-    onConfirm: onDeleteConfirm,
+    onArchive: onArchiveBook,
+    onDelete: onDeleteBook,
     onCancel: function onCancel() {
       return setDeleteTarget(null);
     }
